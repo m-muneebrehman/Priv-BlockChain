@@ -10,7 +10,7 @@ import (
 	"math/big"
 )
 
-const Difficulty = 12
+const Difficulty = 18
 
 type ProofOfWork struct {
 	Block  *Block
@@ -25,7 +25,7 @@ func (pow *ProofOfWork) Run() (int, []byte) {
 	for nonce < math.MaxInt64 {
 		data := pow.InitData(nonce)
 		hash = sha256.Sum256(data)
-		fmt.Printf("Hash: %x", hash)
+		fmt.Printf("\r %x", hash)
 		intHash.SetBytes(hash[:])
 		if intHash.Cmp(pow.Target) == -1 {
 			break
