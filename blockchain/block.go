@@ -4,26 +4,42 @@ import (
 	"bytes"
 	"encoding/gob"
 	"log"
+	"time"
 )
 
 type Block struct {
-	Hash     []byte
-	Data     []byte
-	PrevHash []byte
-	Nonce    int
+	Timestamp    int64
+	Hash         []byte
+	Transactions []*Transaction
+	PrevHash     []byte
+	Nonce        int
+	Height       int
 }
 
-func CreateBlock(data string, prevHash []byte) *Block {
-	block := &Block{[]byte{}, []byte(data), prevHash, 0}
-	pow := NewProofOfWork(block)
+func (b *Block) HashTransactions() []byte {
+	var txHashes [][]byte
+
+	for _, tx := range b.Transactions {
+		txHashes = append(txHashes, tx.Serialize())
+	}
+	tree := NewMerkleTree(txHashes)
+
+	return tree.RootNode.Data
+}
+
+func CreateBlock(txs []*Transaction, prevHash []byte, height int) *Block {
+	block := &Block{time.Now().Unix(), []byte{}, txs, prevHash, 0, height}
+	pow := NewProof(block)
 	nonce, hash := pow.Run()
+
+	block.Hash = hash[:]
 	block.Nonce = nonce
-	block.Hash = hash
+
 	return block
 }
 
-func GenesisBlock() *Block {
-	return CreateBlock("Genesis Block", []byte{})
+func Genesis(coinbase *Transaction) *Block {
+	return CreateBlock([]*Transaction{coinbase}, []byte{}, 0)
 }
 
 func (b *Block) Serialize() []byte {
@@ -47,7 +63,6 @@ func Deserialize(data []byte) *Block {
 	Handle(err)
 
 	return &block
-
 }
 
 func Handle(err error) {
